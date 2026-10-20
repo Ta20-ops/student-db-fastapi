@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduTrack — Student Database & AI Assistant</title>
+  <meta name="description" content="Production-ready Student Database Management Portal with FastAPI, SQLite, and Ollama AI.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Glow Accents -->
+  <div class="bg-blur-circle circle-1"></div>
+  <div class="bg-blur-circle circle-2"></div>
+
+  <div class="app-layout">
+    <!-- Navigation Bar -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">EduTrack</h1>
+          <p class="brand-subtitle">Indian Universities Student Portal</p>
+        </div>
+      </div>
+
+      <div class="nav-status-group">
+        <div class="status-badge" id="apiStatusBadge">
+          <span class="status-dot green"></span>
+          <span id="apiStatusText">API Online</span>
+        </div>
+        <div class="status-badge" id="aiStatusBadge">
+          <span class="status-dot" id="aiStatusDot"></span>
+          <span id="aiStatusText">Checking Ollama...</span>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <a href="/docs" target="_blank" class="btn btn-secondary" title="Open Interactive API Docs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <span>Swagger Docs</span>
+        </a>
+        <button id="openAiDrawerBtn" class="btn btn-ai">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+          <span>Ask AI Assistant</span>
+        </button>
+        <button id="openAddStudentModalBtn" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Add Student</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-content">
+      <!-- Analytics / Metrics Bar -->
+      <section class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="metric-label">Total Enrolled</p>
+            <h3 class="metric-value" id="metricTotalStudents">--</h3>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon purple">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="metric-label">Active Courses</p>
+            <h3 class="metric-value" id="metricTotalCourses">--</h3>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </div>
+          <div>
+            <p class="metric-label">Recent Admissions</p>
+            <h3 class="metric-value" id="metricRecentAdmissions">--</h3>
+          </div>
+        </div>
+
+        <div class="metric-card ai-card" id="aiMetricCard">
+          <div class="metric-icon ai">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <p class="metric-label">AI Query Engine</p>
+            <h3 class="metric-value small" id="metricAiStatus">Ollama llama3.2:1b</h3>
+          </div>
+        </div>
+      </section>
+
+      <!-- Search, Filter & Controls Bar -->
+      <section class="controls-panel">
+        <div class="search-box">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search students by name (e.g. Aarav, Ananya)..." autocomplete="off">
+          <button id="clearSearchBtn" class="clear-search-btn" title="Clear search" style="display: none;">&times;</button>
+        </div>
+
+        <div class="filter-group">
+          <select id="courseFilter" class="select-input">
+            <option value="">All Courses</option>
+          </select>
+
+          <div class="view-toggle">
+            <button id="tableViewBtn" class="toggle-btn active" title="Table View">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+            </button>
+            <button id="gridViewBtn" class="toggle-btn" title="Grid View">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </button>
+          </div>
+
+          <button id="refreshDataBtn" class="btn btn-icon" title="Refresh Table">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Students Table View Container -->
+      <section id="tableViewContainer" class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Full Name</th>
+              <th>Course</th>
+              <th>Email</th>
+              <th>Date of Birth</th>
+              <th>Phone</th>
+              <th>Enrollment</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTableBody">
+            <!-- Populated via JavaScript -->
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Students Grid View Container (Hidden by default) -->
+      <section id="gridViewContainer" class="cards-grid" style="display: none;">
+        <!-- Populated via JavaScript -->
+      </section>
+
+      <!-- Empty / Loading State -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-icon">🎓</div>
+        <h4 id="emptyStateTitle">No students found</h4>
+        <p id="emptyStateMsg">Try adjusting your filters or click "Add Student" to create a new profile.</p>
+        <button id="emptyAddBtn" class="btn btn-primary" style="margin-top: 1rem;">Add First Student</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add / Edit Student Modal -->
+  <div id="studentModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <div>
+            <h3 id="modalTitle">Add New Student</h3>
+            <p id="modalSubtitle">Fill in student details below. Duplicate IDs and emails are validated.</p>
+          </div>
+        </div>
+        <button id="closeModalBtn" class="modal-close-btn">&times;</button>
+      </div>
+
+      <!-- Error Alert inside Modal -->
+      <div id="modalErrorAlert" class="alert-banner alert-danger" style="display: none;"></div>
+
+      <form id="studentForm">
+        <input type="hidden" id="editOriginalId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="formStudentId">Student ID <span class="required">*</span></label>
+            <input type="text" id="formStudentId" placeholder="e.g. STU-2024-001" required>
+          </div>
+
+          <div class="form-group">
+            <label for="formName">Full Name <span class="required">*</span></label>
+            <input type="text" id="formName" placeholder="e.g. Aarav Sharma" required>
+          </div>
+
+          <div class="form-group">
+            <label for="formEmail">Email Address <span class="required">*</span></label>
+            <input type="email" id="formEmail" placeholder="e.g. aarav.sharma@university.edu.in" required>
+          </div>
+
+          <div class="form-group">
+            <label for="formDob">Date of Birth <span class="required">*</span></label>
+            <input type="date" id="formDob" required>
+          </div>
+
+          <div class="form-group">
+            <label for="formPhone">Phone Number</label>
+            <input type="tel" id="formPhone" placeholder="e.g. +91-98765-43210">
+          </div>
+
+          <div class="form-group">
+            <label for="formCourse">Course / Major</label>
+            <input type="text" id="formCourse" placeholder="e.g. Computer Science & Engineering">
+          </div>
+
+          <div class="form-group">
+            <label for="formEnrollmentDate">Enrollment Date</label>
+            <input type="date" id="formEnrollmentDate">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="formAddress">Residential Address</label>
+            <textarea id="formAddress" rows="2" placeholder="e.g. Flat 402, Shanti Niketan, Powai, Mumbai, Maharashtra"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelModalBtn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" id="saveStudentBtn" class="btn btn-primary">
+            <span id="saveBtnText">Save Student</span>
+            <span id="saveBtnSpinner" class="spinner" style="display: none;"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog modal-small">
+      <div class="modal-header">
+        <div class="modal-icon danger">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </div>
+        <div>
+          <h3>Delete Student Record?</h3>
+          <p>This action cannot be undone.</p>
+        </div>
+        <button id="closeDeleteModalBtn" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="deleteModalPrompt">Are you sure you want to permanently delete this student record?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="confirmDeleteBtn" class="btn btn-danger">
+          <span id="confirmDeleteText">Delete Record</span>
+          <span id="deleteBtnSpinner" class="spinner" style="display: none;"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Natural Language Assistant Slide-Over Drawer -->
+  <div id="aiDrawer" class="drawer-backdrop" style="display: none;">
+    <aside class="drawer-panel">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <div class="drawer-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+          </div>
+          <div>
+            <h3>EduTrack AI Assistant</h3>
+            <p>Grounded on verified Indian student database</p>
+          </div>
+        </div>
+        <button id="closeAiDrawerBtn" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="ai-status-strip" id="drawerAiStatusStrip">
+        <span class="status-dot green" id="drawerAiDot"></span>
+        <span id="drawerAiStatusText">Checking Ollama status...</span>
+      </div>
+
+      <!-- Chat History -->
+      <div class="drawer-messages" id="aiChatMessages">
+        <div class="chat-message bot">
+          <div class="bot-avatar">🤖</div>
+          <div class="message-bubble">
+            <p><strong>Namaste! Main aapka Student Database Assistant hoon.</strong></p>
+            <p>Aap mujhse student database se juda koi bhi sawaal pooch sakte hain. Jaise:</p>
+            <div class="prompt-chips">
+              <button class="chip" data-prompt="How many total students are currently enrolled?">📊 Total enrolled students</button>
+              <button class="chip" data-prompt="How many students are enrolled in Computer Science & Engineering?">💻 Computer Science students</button>
+              <button class="chip" data-prompt="List students born after 2004 with their details.">🎂 Born after 2004</button>
+              <button class="chip" data-prompt="Which students are located in Mumbai or Bengaluru?">📍 Students in Mumbai / Bengaluru</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input -->
+      <form id="aiChatForm" class="drawer-input-form">
+        <div class="input-container">
+          <input type="text" id="aiQuestionInput" placeholder="Sawaal poochein (e.g. CS me kitne students hain?)..." autocomplete="off">
+          <button type="submit" id="sendAiBtn" class="btn btn-primary btn-send">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </form>
+    </aside>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
