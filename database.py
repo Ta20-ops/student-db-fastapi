@@ -3,16 +3,19 @@ from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-# SQLite database URL (can be overridden via environment variable)
-DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./students.db")
+# Check if running in Vercel serverless environment (read-only filesystem except /tmp)
+IS_VERCEL = bool(os.getenv("VERCEL") or os.getenv("NOW_REGION"))
+DEFAULT_DB_URL = "sqlite:////tmp/students.db" if IS_VERCEL else "sqlite:///./students.db"
 
-# check_same_thread: False is needed only for SQLite to allow multiple threads per connection
+DATABASE_URL: str = os.getenv("DATABASE_URL", DEFAULT_DB_URL)
+
+# check_same_thread: False is needed for SQLite
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
 engine = create_engine(
     DATABASE_URL,
     connect_args=connect_args,
-    echo=False,  # Set to True if SQL query logging is desired
+    echo=False,
 )
 
 SessionLocal = sessionmaker(
@@ -26,8 +29,7 @@ Base = declarative_base()
 
 def get_db() -> Generator[Session, None, None]:
     """
-    FastAPI dependency that yields a SQLAlchemy database session
-    and guarantees it is closed after request handling.
+    FastAPI dependency yielding a database session and closing it on completion.
     """
     db: Session = SessionLocal()
     try:

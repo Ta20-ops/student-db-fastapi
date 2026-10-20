@@ -10,17 +10,31 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 import crud
-from database import get_db, create_tables
+from database import get_db, create_tables, SessionLocal
 from ai_helper import ask_student_ai, check_ollama_available
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Application lifespan handler:
-    Ensures database tables are created automatically on application startup.
+    - Ensures database tables are created automatically on startup.
+    - Automatically seeds default Indian student records if database is empty.
     """
     create_tables()
+    db = SessionLocal()
+    try:
+        if crud.count_students(db) == 0:
+            from seed import SAMPLE_STUDENTS
+            for student_data in SAMPLE_STUDENTS:
+                crud.create_student(db, schemas.StudentCreate(**student_data))
+    except Exception as e:
+        print(f"Warning during auto-seed: {e}")
+    finally:
+        db.close()
     yield
 
 
@@ -46,9 +60,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static assets if the folder exists
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static directory if it exists
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get(
@@ -59,12 +73,13 @@ if os.path.exists("static"):
 def root(request: Request):
     """
     Smart root handler:
-    - If accessed from a web browser (Accept: text/html), renders the interactive Frontend Dashboard.
-    - If accessed by API clients or tests (Accept: application/json), returns API health metadata.
+    - Browser requests (Accept: text/html) receive the interactive Frontend Dashboard.
+    - API & JSON clients receive API health metadata.
     """
     accept = request.headers.get("accept", "")
-    if "text/html" in accept and os.path.exists("static/index.html"):
-        return FileResponse("static/index.html")
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if "text/html" in accept and os.path.exists(index_path):
+        return FileResponse(index_path)
     return {
         "status": "healthy",
         "service": "Student Database Management API",
@@ -81,20 +96,23 @@ def root(request: Request):
 )
 def serve_dashboard():
     """Direct route to the EduTrack interactive Frontend Dashboard."""
-    if os.path.exists("static/index.html"):
-        return FileResponse("static/index.html")
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return {"message": "Dashboard static files not found."}
 
 
 # Convenience routes for direct static assets
 @app.get("/style.css", include_in_schema=False)
 def serve_css():
-    return FileResponse("static/style.css", media_type="text/css")
+    css_path = os.path.join(STATIC_DIR, "style.css")
+    return FileResponse(css_path, media_type="text/css")
 
 
 @app.get("/app.js", include_in_schema=False)
 def serve_js():
-    return FileResponse("static/app.js", media_type="application/javascript")
+    js_path = os.path.join(STATIC_DIR, "app.js")
+    return FileResponse(js_path, media_type="application/javascript")
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +208,7 @@ def get_student(
     db: Session = Depends(get_db),
 ):
     """
-    Fetch a student by `student_id` (e.g. 'STU-101' or internal primary key ID).
+    Fetch a student by `student_id` (e.g. 'STU-2024-001' or internal primary key ID).
     Returns 404 Not Found if the record does not exist.
     """
     student = crud.get_student_by_identifier(db, identifier=student_id)
